@@ -1,0 +1,53 @@
+stages:
+  - build
+  - test
+  - push
+  - deploy
+
+variables:
+  IMAGE: $DOCKER_USER/gestiabsence:latest
+
+# ── STAGE 1 : Build ──────────────────────────
+build:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $IMAGE .
+  only:
+    - main
+
+# ── STAGE 2 : Test ───────────────────────────
+test:
+  stage: test
+  image: python:3.11-slim
+  script:
+    - pip install flask openpyxl --quiet
+    - python -c "from app import app, init_db; init_db(); print('Tests OK')"
+  only:
+    - main
+
+# ── STAGE 3 : Push Docker Hub ─────────────────
+push:
+  stage: push
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $IMAGE .
+    - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+    - docker push $IMAGE
+  only:
+    - main
+
+# ── STAGE 4 : Deploy sur K3s ──────────────────
+deploy:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl apply -f kubernetes/deployment.yaml
+    - kubectl rollout restart deployment/gestiabsence
+    - kubectl get pods
+  only:
+    - main
