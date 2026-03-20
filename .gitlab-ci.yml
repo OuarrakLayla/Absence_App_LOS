@@ -44,7 +44,7 @@ push:
 # ── STAGE 4 : Deploy sur K3s ──────────────────
 deploy:
   stage: deploy
-  image: bitnami/kubectl:latest
+  image: alpine/k8s:1.28.3
   script:
     - kubectl apply -f kubernetes/deployment.yaml
     - kubectl rollout restart deployment/gestiabsence
