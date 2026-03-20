@@ -49,6 +49,7 @@ deploy:
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_CONTENT" | base64 -d > ~/.kube/config
     - sed -i 's/127.0.0.1/13.61.25.230/g' ~/.kube/config
+    - kubectl config set-cluster default --insecure-skip-tls-verify=true
     - kubectl apply -f kubernetes/deployment.yaml
     - kubectl rollout restart deployment/gestiabsence
     - kubectl get pods
