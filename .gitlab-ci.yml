@@ -16,7 +16,7 @@ build:
   script:
     - docker build -t $IMAGE .
   only:
-    - main
+    - master
 
 # ── STAGE 2 : Test ───────────────────────────
 test:
@@ -26,7 +26,7 @@ test:
     - pip install flask openpyxl --quiet
     - python -c "from app import app, init_db; init_db(); print('Tests OK')"
   only:
-    - main
+    - master
 
 # ── STAGE 3 : Push Docker Hub ─────────────────
 push:
@@ -39,7 +39,7 @@ push:
     - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
     - docker push $IMAGE
   only:
-    - main
+    - master
 
 # ── STAGE 4 : Deploy sur K3s ──────────────────
 deploy:
@@ -50,4 +50,4 @@ deploy:
     - kubectl rollout restart deployment/gestiabsence
     - kubectl get pods
   only:
-    - main
+    - master
