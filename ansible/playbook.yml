@@ -1,5 +1,5 @@
 ---
-- name: Configurer les noeuds Kubernetes
+- name: Configurer les noeuds K3s
   hosts: all
   become: yes
   tasks:
@@ -19,28 +19,51 @@
         state: started
         enabled: yes
 
-    - name: Désactiver le swap
-      command: swapoff -a
+    - name: Créer le swapfile
+      command: fallocate -l 1G /swapfile
+      args:
+        creates: /swapfile
 
-    - name: Ajouter la clé GPG Kubernetes
+    - name: Permissions swapfile
+      file:
+        path: /swapfile
+        mode: '0600'
+
+    - name: Formater le swap
+      command: mkswap /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Activer le swap
+      command: swapon /swapfile
+      ignore_errors: yes
+
+- name: Installer K3s sur le master
+  hosts: master
+  become: yes
+  tasks:
+
+    - name: Installer K3s server
+      shell: curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Récupérer le token K3s
+      command: cat /var/lib/rancher/k3s/server/node-token
+      register: k3s_token
+
+    - name: Afficher le token
+      debug:
+        msg: "{{ k3s_token.stdout }}"
+
+- name: Installer K3s sur le worker
+  hosts: worker
+  become: yes
+  tasks:
+
+    - name: Installer K3s agent
       shell: |
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-
-    - name: Ajouter le repo Kubernetes
-      shell: |
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
-
-    - name: Installer kubeadm kubelet kubectl
-      apt:
-        update_cache: yes
-        name:
-          - kubeadm
-          - kubelet
-          - kubectl
-        state: present
-
-    - name: Activer kubelet
-      service:
-        name: kubelet
-        state: started
-        enabled: yes
+        curl -sfL https://get.k3s.io | K3S_URL=https://13.61.25.230:6443 \
+        K3S_TOKEN={{ hostvars['13.61.25.230']['k3s_token']['stdout'] }} sh -
+      args:
+        creates: /usr/local/bin/k3s
