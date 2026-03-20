@@ -46,8 +46,10 @@ deploy:
   stage: deploy
   image: alpine/k8s:1.28.3
   script:
-    - kubectl apply -f kubernetes/deployment.yaml
-    - kubectl rollout restart deployment/gestiabsence
-    - kubectl get pods
+    - echo "$KUBECONFIG_CONTENT" > kubeconfig.yaml
+    - sed -i 's/127.0.0.1/13.61.25.230/g' kubeconfig.yaml
+    - kubectl --kubeconfig kubeconfig.yaml apply -f kubernetes/deployment.yaml
+    - kubectl --kubeconfig kubeconfig.yaml rollout restart deployment/gestiabsence
+    - kubectl --kubeconfig kubeconfig.yaml get pods
   only:
     - master
