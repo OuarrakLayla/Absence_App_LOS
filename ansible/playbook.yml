@@ -1,0 +1,46 @@
+---
+- name: Configurer les noeuds Kubernetes
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Mettre à jour le système
+      apt:
+        update_cache: yes
+
+    - name: Installer Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Démarrer Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Désactiver le swap
+      command: swapoff -a
+
+    - name: Ajouter la clé GPG Kubernetes
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Ajouter le repo Kubernetes
+      shell: |
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
+
+    - name: Installer kubeadm kubelet kubectl
+      apt:
+        update_cache: yes
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+
+    - name: Activer kubelet
+      service:
+        name: kubelet
+        state: started
+        enabled: yes

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Statistiques — GestiAbsence{% endblock %}
+{% block page_title %}Statistiques{% endblock %}
+{% block content %}
+<div class="page-banner">
+  <div class="banner-emoji">📊</div>
+  <div class="banner-text">
+    <div class="banner-title">Tableau analytique</div>
+    <div class="banner-sub">Visualisez les tendances et identifiez les patterns d'absences</div>
+    <div class="banner-actions">
+      <a href="/api/export/excel" class="btn-sm p"><i class="fas fa-file-excel"></i> Exporter Excel</a>
+      <a href="/ajouter" class="btn-sm s"><i class="fas fa-plus"></i> Ajouter absence</a>
+    </div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card indigo"><div class="kpi-icon"><i class="fas fa-calendar-times"></i></div><div class="kpi-value" id="sTotal">—</div><div class="kpi-label">Total absences</div></div>
+  <div class="kpi-card green"><div class="kpi-icon"><i class="fas fa-check-circle"></i></div><div class="kpi-value" id="sJust">—</div><div class="kpi-label">Justifiées</div></div>
+  <div class="kpi-card red"><div class="kpi-icon"><i class="fas fa-times-circle"></i></div><div class="kpi-value" id="sNJ">—</div><div class="kpi-label">Non justifiées</div></div>
+  <div class="kpi-card amber"><div class="kpi-icon"><i class="fas fa-percent"></i></div><div class="kpi-value" id="sTaux">—</div><div class="kpi-label">Taux justification</div></div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-title"><i class="fas fa-chart-pie" style="color:var(--pri)"></i> Répartition par type</div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="width:150px;height:150px;flex-shrink:0"><canvas id="chartDonut"></canvas></div>
+      <div id="donutLegend" style="flex:1"></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-title"><i class="fas fa-trophy" style="color:#F59E0B"></i> Top étudiants absents</div>
+    <div id="topStudents"></div>
+  </div>
+</div>
+
+<div class="stat-card" style="margin-bottom:14px">
+  <div class="stat-title"><i class="fas fa-school" style="color:var(--pri)"></i> Absences par classe</div>
+  <canvas id="chartClasse" style="max-height:220px"></canvas>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#64748B';
+Chart.defaults.borderColor = '#E2E8F0';
+
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  const taux = d.total > 0 ? Math.round(d.justifiees / d.total * 100) : 0;
+  document.getElementById('sTotal').textContent = d.total;
+  document.getElementById('sJust').textContent  = d.justifiees;
+  document.getElementById('sNJ').textContent    = d.non_justifiees;
+  document.getElementById('sTaux').textContent  = taux + '%';
+
+  new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Justifiées', 'Non justifiées'],
+      datasets: [{ data: [d.justifiees, d.non_justifiees],
+        backgroundColor: ['#059669', '#DC2626'],
+        borderColor: '#FFFFFF', borderWidth: 3, hoverOffset: 8 }]
+    },
+    options: { cutout: '68%', plugins: { legend: { display: false } }, animation: { duration: 900 } }
+  });
+
+  document.getElementById('donutLegend').innerHTML = `
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px;font-weight:600;color:#0F172A">
+      <div style="width:11px;height:11px;border-radius:50%;background:#059669;flex-shrink:0"></div>
+      Justifiées : <strong>${d.justifiees}</strong> <span style="color:#64748B">(${taux}%)</span>
+    </div>
+    <div style="height:6px;background:#E2E8F0;border-radius:3px;margin-bottom:12px">
+      <div style="width:${taux}%;height:100%;background:#059669;border-radius:3px"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px;font-weight:600;color:#0F172A">
+      <div style="width:11px;height:11px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>
+      Non justifiées : <strong>${d.non_justifiees}</strong> <span style="color:#64748B">(${100-taux}%)</span>
+    </div>
+    <div style="height:6px;background:#E2E8F0;border-radius:3px">
+      <div style="width:${100-taux}%;height:100%;background:#DC2626;border-radius:3px"></div>
+    </div>`;
+
+  const cols = ['#2563EB','#F59E0B','#059669','#0EA5E9','#94A3B8'];
+  document.getElementById('topStudents').innerHTML = d.by_student.slice(0,5).map((s,i) => {
+    const pct = Math.round(s.total / d.total * 100);
+    return `<div class="top-row">
+      <div class="top-rank" style="background:${cols[i]}20;color:${cols[i]}">${i+1}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:#0F172A">${s.etudiant}</div>
+        <div style="height:4px;background:#E2E8F0;border-radius:3px;margin-top:5px">
+          <div style="width:${pct}%;height:100%;background:${cols[i]};border-radius:3px"></div>
+        </div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:${cols[i]};min-width:20px;text-align:right">${s.total}</div>
+    </div>`;
+  }).join('');
+
+  new Chart(document.getElementById('chartClasse'), {
+    type: 'bar',
+    data: {
+      labels: d.by_class.map(c => c.classe),
+      datasets: [
+        { label: '✅ Justifiées',     data: d.by_class.map(c => c.justifiees),     backgroundColor: 'rgba(5,150,105,.7)',  borderRadius: 4 },
+        { label: '❌ Non justifiées', data: d.by_class.map(c => c.non_justifiees), backgroundColor: 'rgba(220,38,38,.7)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, padding: 14, color: '#64748B' } } },
+      scales: {
+        x: { stacked: true, grid: { color: '#F1F5F9' }, ticks: { color: '#64748B' } },
+        y: { stacked: true, grid: { color: '#F1F5F9' }, ticks: { color: '#64748B', stepSize: 1 } }
+      }
+    }
+  });
+
+  
+}
+loadStats();
+</script>
+{% endblock %}

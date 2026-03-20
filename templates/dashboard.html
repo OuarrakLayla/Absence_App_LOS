@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — GestiAbsence{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block content %}
+
+<div class="page-banner">
+  <div class="banner-emoji">🎓</div>
+  <div class="banner-text">
+    <div class="banner-title">Gestion des Absences Étudiantes</div>
+    <div class="banner-sub">Consultez, filtrez et gérez toutes les absences enregistrées</div>
+    <div class="banner-actions">
+      <a href="/ajouter" class="btn-sm p"><i class="fas fa-plus"></i> Nouvelle absence</a>
+      <a href="/statistiques" class="btn-sm s"><i class="fas fa-chart-bar"></i> Statistiques</a>
+      <a href="/api/export/excel" class="btn-sm s"><i class="fas fa-file-excel"></i> Export Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card indigo"><div class="kpi-icon"><i class="fas fa-calendar-times"></i></div><div class="kpi-value" id="kTotal">—</div><div class="kpi-label">Total absences</div></div>
+  <div class="kpi-card green"><div class="kpi-icon"><i class="fas fa-check-circle"></i></div><div class="kpi-value" id="kJust">—</div><div class="kpi-label">✅ Justifiées</div></div>
+  <div class="kpi-card red"><div class="kpi-icon"><i class="fas fa-times-circle"></i></div><div class="kpi-value" id="kNJ">—</div><div class="kpi-label">❌ Non justifiées</div></div>
+  <div class="kpi-card amber"><div class="kpi-icon"><i class="fas fa-school"></i></div><div class="kpi-value" id="kCls">—</div><div class="kpi-label">Classes suivies</div></div>
+</div>
+
+<div class="filter-card">
+  <div class="filter-title"><i class="fas fa-filter" style="color:var(--pri-l)"></i> Filtrer les absences</div>
+  <div class="filter-row">
+    <input type="text" class="form-ctrl" id="f-search" placeholder="🔎  Nom, prénom ou matricule…" oninput="applyFilters()" style="flex:2.5;min-width:160px">
+    <select class="form-ctrl" id="f-type" onchange="applyFilters()">
+      <option value="">Tous les types</option>
+      <option value="Justifiée">✅ Justifiée</option>
+      <option value="Non justifiée">❌ Non justifiée</option>
+    </select>
+    <select class="form-ctrl" id="f-classe" onchange="applyFilters()">
+      <option value="">Toutes les classes</option>
+    </select>
+    <input type="date" class="form-ctrl" id="f-d1" onchange="applyFilters()">
+    <input type="date" class="form-ctrl" id="f-d2" onchange="applyFilters()">
+    <button class="btn-reset" onclick="resetFilters()" title="Réinitialiser"><i class="fas fa-rotate-left"></i></button>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-header">
+    <div>
+      <div class="table-title">Liste des absences</div>
+      <div class="table-count" id="rowCount">Chargement…</div>
+    </div>
+    <a href="/api/export/excel" class="btn-excel"><i class="fas fa-file-excel"></i> Exporter Excel</a>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Étudiant</th>
+          <th>Matricule</th>
+          <th>Classe</th>
+          <th>Email</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Motif</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--mut)">
+          <i class="fas fa-spinner fa-spin"></i> Chargement…
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const COLORS = [
+  'linear-gradient(135deg,#1e1b4b,#6366f1)',
+  'linear-gradient(135deg,#064e3b,#059669)',
+  'linear-gradient(135deg,#3b0764,#9333ea)',
+  'linear-gradient(135deg,#451a03,#f59e0b)',
+  'linear-gradient(135deg,#0c4a6e,#0ea5e9)',
+  'linear-gradient(135deg,#14532d,#22c55e)',
+  'linear-gradient(135deg,#4a044e,#d946ef)',
+  'linear-gradient(135deg,#1c1917,#78716c)',
+];
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  const M = ['','jan','fév','mars','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  return `${+day} ${M[+m]} ${y}`;
+}
+
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  document.getElementById('kTotal').textContent = d.total;
+  document.getElementById('kJust').textContent  = d.justifiees;
+  document.getElementById('kNJ').textContent    = d.non_justifiees;
+  document.getElementById('kCls').textContent   = d.classes.length;
+  const sel = document.getElementById('f-classe');
+  sel.innerHTML = '<option value="">Toutes les classes</option>';
+  d.classes.forEach(c => sel.innerHTML += `<option>${c}</option>`);
+}
+
+async function loadAbsences() {
+  const s  = document.getElementById('f-search').value;
+  const t  = document.getElementById('f-type').value;
+  const cl = document.getElementById('f-classe').value;
+  const d1 = document.getElementById('f-d1').value;
+  const d2 = document.getElementById('f-d2').value;
+  const p  = new URLSearchParams();
+  if (s)  p.set('etudiant', s);
+  if (t)  p.set('type', t);
+  if (cl) p.set('classe', cl);
+  if (d1) p.set('date_debut', d1);
+  if (d2) p.set('date_fin', d2);
+  const r = await fetch('/api/absences?' + p);
+  const rows = await r.json();
+  renderTable(rows);
+}
+
+function renderTable(rows) {
+  const n = rows.length;
+  document.getElementById('rowCount').textContent = `${n} résultat${n !== 1 ? 's' : ''}`;
+  if (!n) {
+    document.getElementById('tableBody').innerHTML = `
+      <tr><td colspan="8" style="text-align:center;padding:50px;color:var(--mut)">
+        <div style="font-size:36px;margin-bottom:10px">🔍</div>
+        Aucune absence trouvée
+      </td></tr>`;
+    return;
+  }
+  document.getElementById('tableBody').innerHTML = rows.map((r, i) => {
+    const initials = ((r.nom||'?')[0] + (r.prenom||'?')[0]).toUpperCase();
+    const grad = COLORS[i % COLORS.length];
+    const isJ  = r.type_absence === 'Justifiée';
+    return `<tr>
+      <td>
+        <div class="student-cell">
+          <div class="s-avatar" style="background:${grad}">${initials}</div>
+          <span class="s-name">${r.nom} ${r.prenom}</span>
+        </div>
+      </td>
+      <td><span class="badge-mat">${r.matricule}</span></td>
+      <td><span class="badge-cls">${r.classe}</span></td>
+      <td style="font-size:11px;color:var(--mut)">${r.email || '—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${fmtDate(r.date)}</td>
+      <td>${isJ
+        ? '<span class="badge-just">✅ Justifiée</span>'
+        : '<span class="badge-nj">❌ Non justifiée</span>'}</td>
+      <td><span class="mot-text">${r.motif || '—'}</span></td>
+      <td>
+        <button class="btn-del" onclick="deleteRow(${r.id})">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteRow(id) {
+  if (!confirm('Supprimer cette absence ?')) return;
+  await fetch(`/api/absences/${id}`, { method: 'DELETE' });
+  showToast('Absence supprimée');
+  loadStats();
+  loadAbsences();
+}
+
+function applyFilters() { loadAbsences(); }
+
+function resetFilters() {
+  ['f-search', 'f-d1', 'f-d2'].forEach(id => document.getElementById(id).value = '');
+  ['f-type', 'f-classe'].forEach(id => document.getElementById(id).value = '');
+  loadAbsences();
+}
+
+loadStats();
+loadAbsences();
+</script>
+{% endblock %}

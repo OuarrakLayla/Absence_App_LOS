@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — GestiAbsence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --pri: #2563EB; --pri-d: #1D4ED8;
+    --dan: #DC2626;
+    --bg:  #F8FAFC;
+    --bg2: #FFFFFF;
+    --txt: #0F172A; --mut: #64748B; --brd: #E2E8F0;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--txt);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 20% 40%, rgba(37,99,235,.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 70%, rgba(37,99,235,.05) 0%, transparent 50%);
+  }
+  .wrap { position: relative; z-index: 1; width: 100%; max-width: 420px; padding: 20px; }
+
+  .logo { text-align: center; margin-bottom: 28px; }
+  .logo-icon {
+    width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 14px;
+    background: linear-gradient(135deg, var(--pri), #60A5FA);
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+    box-shadow: 0 8px 24px rgba(37,99,235,.3);
+  }
+  .logo h1 { font-size: 24px; font-weight: 800; color: var(--txt); letter-spacing: -.5px; }
+  .logo p  { font-size: 12px; color: var(--mut); margin-top: 4px; text-transform: uppercase; letter-spacing: .1em; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--brd); border-radius: 20px;
+    padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,.08);
+  }
+  .card-title { font-size: 18px; font-weight: 700; color: var(--txt); margin-bottom: 4px; }
+  .card-sub   { font-size: 13px; color: var(--mut); margin-bottom: 26px; }
+
+  .alert { display: none; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; }
+  .alert.show { display: flex; }
+  .alert.err  { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; }
+
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 7px; }
+  .input-wrap { position: relative; }
+  .input-wrap i.ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--mut); font-size: 13px; pointer-events: none; }
+  input[type=text], input[type=password] {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--brd);
+    border-radius: 10px; padding: 11px 42px; color: var(--txt); font-size: 14px;
+    font-family: 'Inter', sans-serif; outline: none; transition: .2s;
+  }
+  input:focus { border-color: var(--pri); background: #EFF6FF; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  input.error { border-color: var(--dan); background: #FEF2F2; }
+  .eye-btn { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--mut); cursor: pointer; font-size: 13px; }
+  .eye-btn:hover { color: var(--txt); }
+
+  .remember { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; cursor: pointer; }
+  .remember input { display: none; }
+  .chk {
+    width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--brd);
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; transition: .15s; flex-shrink: 0;
+  }
+  .remember input:checked ~ .chk { background: var(--pri); border-color: var(--pri); }
+  .remember span { font-size: 13px; color: var(--mut); }
+
+  .btn-login {
+    width: 100%; background: linear-gradient(135deg, var(--pri), var(--pri-d));
+    color: #fff; border: none; border-radius: 12px; padding: 13px;
+    font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: .2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(37,99,235,.35); }
+  .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .demo {
+    margin-top: 18px; background: #EFF6FF; border: 1px solid #BFDBFE;
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .demo-title { font-size: 10px; font-weight: 700; color: #1D4ED8; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+  .demo-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mut); margin-top: 5px; }
+  .demo-row code { background: #BFDBFE; color: #1E3A8A; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+
+  .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <h1>GestiAbsence</h1>
+    <p>Système de gestion scolaire</p>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Connexion administrateur</h2>
+    <p class="card-sub">Identifiez-vous pour accéder au tableau de bord</p>
+
+    <div class="alert err" id="alertErr">
+      <i class="fas fa-circle-xmark"></i>
+      <span id="alertMsg">Identifiants incorrects. Réessayez.</span>
+    </div>
+
+    <div class="field">
+      <label>Identifiant</label>
+      <div class="input-wrap">
+        <i class="fas fa-user ico"></i>
+        <input type="text" id="username" placeholder="admin" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Mot de passe</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock ico"></i>
+        <input type="password" id="password" placeholder="••••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <i class="fas fa-eye eye-btn" id="eyeBtn" onclick="toggleEye()"></i>
+      </div>
+    </div>
+
+    <label class="remember">
+      <input type="checkbox" id="rememberMe">
+      <div class="chk" id="chkEl"><i class="fas fa-check" style="font-size:9px"></i></div>
+      <span>Se souvenir de moi</span>
+    </label>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <span id="btnTxt"><i class="fas fa-arrow-right-to-bracket"></i>&nbsp; Se connecter</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+   
+  </div>
+</div>
+
+<script>
+let eyeVis = false;
+function toggleEye() {
+  eyeVis = !eyeVis;
+  document.getElementById('password').type = eyeVis ? 'text' : 'password';
+  document.getElementById('eyeBtn').className = 'fas fa-eye' + (eyeVis ? '-slash' : '') + ' eye-btn';
+}
+document.getElementById('rememberMe').addEventListener('change', function() {
+  document.getElementById('chkEl').style.opacity = this.checked ? '1' : '0.4';
+});
+async function doLogin() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const al = document.getElementById('alertErr');
+  al.classList.remove('show');
+  document.getElementById('username').classList.remove('error');
+  document.getElementById('password').classList.remove('error');
+  if (!u || !p) {
+    document.getElementById('alertMsg').textContent = 'Veuillez remplir tous les champs.';
+    al.classList.add('show');
+    if (!u) document.getElementById('username').classList.add('error');
+    if (!p) document.getElementById('password').classList.add('error');
+    return;
+  }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  document.getElementById('btnTxt').style.display = 'none';
+  document.getElementById('spinner').style.display = 'block';
+  try {
+    const res  = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) });
+    const data = await res.json();
+    if (data.success) { window.location.href = '/'; }
+    else {
+      document.getElementById('alertMsg').textContent = data.error || 'Identifiants incorrects.';
+      al.classList.add('show');
+      document.getElementById('username').classList.add('error');
+      document.getElementById('password').classList.add('error');
+    }
+  } catch(e) {
+    document.getElementById('alertMsg').textContent = 'Erreur de connexion. Réessayez.';
+    al.classList.add('show');
+  }
+  btn.disabled = false;
+  document.getElementById('btnTxt').style.display = 'flex';
+  document.getElementById('spinner').style.display = 'none';
+}
+</script>
+</body>
+</html>

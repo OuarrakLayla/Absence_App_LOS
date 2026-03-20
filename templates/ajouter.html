@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Ajouter une absence — GestiAbsence{% endblock %}
+{% block page_title %}Ajouter une absence{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <div class="banner-emoji">📋</div>
+  <div class="banner-text">
+    <div class="banner-title">Enregistrer une absence</div>
+    <div class="banner-sub">Remplissez le formulaire ci-dessous pour ajouter une nouvelle absence</div>
+  </div>
+</div>
+
+<div class="form-card">
+
+  <!-- SECTION 1 : Étudiant -->
+  <div class="form-section"><i class="fas fa-user-graduate"></i> Informations étudiant</div>
+  <div class="form-grid">
+    <div>
+      <div class="form-label">Nom <span class="req">*</span></div>
+      <input id="fNom" type="text" class="form-ctrl" placeholder="Ex: Ouarrak" style="width:100%;display:block">
+    </div>
+    <div>
+      <div class="form-label">Prénom <span class="req">*</span></div>
+      <input id="fPre" type="text" class="form-ctrl" placeholder="Ex: Layla" style="width:100%;display:block">
+    </div>
+    <div>
+      <div class="form-label">Matricule <span class="req">*</span></div>
+      <input id="fMat" type="text" class="form-ctrl" placeholder="M130026001" style="width:100%;display:block">
+    </div>
+    <div>
+      <div class="form-label">Classe <span class="req">*</span></div>
+      <select id="fCls" class="form-ctrl" style="width:100%;display:block">
+        <option value="">— Sélectionner —</option>
+        <option>INFO-1A</option><option>INFO-2A</option><option>INFO-3A</option>
+        <option>MATH-1B</option><option>MATH-2B</option><option>MATH-3B</option>
+        <option>PHYS-1C</option><option>PHYS-2C</option><option>CHIM-1D</option><option>BIO-1E</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1">
+      <div class="form-label">Email étudiant</div>
+      <input id="fEml" type="email" class="form-ctrl" placeholder="etudiant@universite.ma" style="width:100%;display:block">
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <!-- SECTION 2 : Détails absence -->
+  <div class="form-section"><i class="fas fa-calendar-times"></i> Détails de l'absence</div>
+  <div class="form-grid">
+    <div>
+      <div class="form-label">Date <span class="req">*</span></div>
+      <input id="fDat" type="date" class="form-ctrl" style="width:100%;display:block">
+    </div>
+    <div>
+      <div class="form-label">Type d'absence <span class="req">*</span></div>
+      <div class="type-row">
+        <div class="type-btn just" id="tcJ" onclick="selType('J')">
+          <span class="t-icon">✅</span>Justifiée
+        </div>
+        <div class="type-btn" id="tcN" onclick="selType('N')">
+          <span class="t-icon">❌</span>Non justifiée
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="form-label">Motif prédéfini</div>
+      <select class="form-ctrl" style="width:100%;display:block" onchange="fillMotif(this.value)">
+        <option value="">Sélectionner un motif…</option>
+        <option>Maladie</option>
+        <option>Urgence familiale</option>
+        <option>Convocation administrative</option>
+        <option>Accident</option>
+        <option>Retard</option>
+        <option>Maladie chronique</option>
+        <option>Problème de transport</option>
+        <option>Autre (préciser)</option>
+      </select>
+    </div>
+    <div>
+      <div class="form-label">Motif personnalisé</div>
+      <input id="fMot" type="text" class="form-ctrl" placeholder="Ou saisir librement…" style="width:100%;display:block">
+    </div>
+  </div>
+
+  <div class="form-divider"></div>
+
+  <!-- Boutons -->
+  <div style="display:flex;justify-content:flex-end;gap:10px">
+    <a href="/" class="btn-secondary" style="text-decoration:none">
+      <i class="fas fa-arrow-left"></i> Annuler
+    </a>
+    <button class="btn-primary" id="submitBtn" onclick="submitForm()">
+      <i class="fas fa-save"></i> Enregistrer l'absence
+    </button>
+  </div>
+
+  <div class="msg-ok" id="msgOk"></div>
+  <div class="msg-err" id="msgErr"></div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selTypeVal = 'J';
+
+document.getElementById('fDat').valueAsDate = new Date();
+
+function selType(t) {
+  selTypeVal = t;
+  document.getElementById('tcJ').className = 'type-btn' + (t === 'J' ? ' just' : '');
+  document.getElementById('tcN').className = 'type-btn' + (t === 'N' ? ' nj' : '');
+}
+
+function fillMotif(v) {
+  if (v && v !== 'Autre (préciser)') {
+    document.getElementById('fMot').value = v;
+  } else if (v === 'Autre (préciser)') {
+    document.getElementById('fMot').value = '';
+    document.getElementById('fMot').focus();
+  }
+}
+
+async function submitForm() {
+  const nom    = document.getElementById('fNom').value.trim();
+  const prenom = document.getElementById('fPre').value.trim();
+  const mat    = document.getElementById('fMat').value.trim();
+  const cls    = document.getElementById('fCls').value;
+  const email  = document.getElementById('fEml').value.trim();
+  const date   = document.getElementById('fDat').value;
+  const motif  = document.getElementById('fMot').value.trim();
+
+  document.getElementById('msgOk').style.display = 'none';
+  document.getElementById('msgErr').style.display = 'none';
+
+  if (!nom || !prenom || !mat || !cls || !date) {
+    document.getElementById('msgErr').innerHTML = '⚠️ &nbsp;Veuillez remplir tous les champs obligatoires (*).';
+    document.getElementById('msgErr').style.display = 'flex';
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
+
+  try {
+    const res = await fetch('/api/absences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom, prenom, matricule: mat, classe: cls,
+        email, date,
+        type_absence: selTypeVal === 'J' ? 'Justifiée' : 'Non justifiée',
+        motif,
+        send_notification: false
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('msgOk').innerHTML =
+        `✅ &nbsp;Absence de <strong>${nom} ${prenom}</strong> enregistrée avec succès !`;
+      document.getElementById('msgOk').style.display = 'flex';
+
+      // Réinitialiser le formulaire
+      ['fNom', 'fPre', 'fMat', 'fEml', 'fMot'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('fCls').value = '';
+      document.getElementById('fDat').valueAsDate = new Date();
+      selType('J');
+
+      showToast(nom + ' ' + prenom + ' ajouté(e) avec succès ✅');
+      setTimeout(() => window.location.href = '/', 2500);
+    } else {
+      throw new Error();
+    }
+  } catch (e) {
+    document.getElementById('msgErr').innerHTML = '❌ &nbsp;Erreur lors de l\'enregistrement. Réessayez.';
+    document.getElementById('msgErr').style.display = 'flex';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-save"></i> Enregistrer l\'absence';
+}
+</script>
+{% endblock %}
