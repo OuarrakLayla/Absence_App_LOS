@@ -64,7 +64,9 @@ Application fonctionnelle
 Déploiement automatisé
 Architecture scalable et maintenable
  Auteurs
-Layla Ouarrak
+Ouarrak Layla
+Outighli Sanae
+
  Remarques
 Le fichier absences.db est utilisé dans l’application pour stocker les données des absences
 Utiliser .gitignore pour exclure les fichiers inutiles
